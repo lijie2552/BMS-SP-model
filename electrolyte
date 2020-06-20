@@ -1,0 +1,58 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Copyright (C) 2017 Jie Li, Missouri University of Science and Technology, jl339@mst.edu.
+% This file is part of Li, J., N. Lotfi, Robert G. Landers, and Jonghyun Park. "A single particle model for lithium-ion batteries with electrolyte and stress-enhanced diffusion physics." Journal of The Electrochemical Society 164, no. 4 (2017): A874-A883.
+% This file can not be copied, modified, and/or distributed without the express permission of Jie Li
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+clc;clear all;close all;
+D1_neg=7.50E-11; %%%electrolyte	phase	Li-diffusivity	Negative
+D1_pos=7.50E-11; %%electrolyte	phase	Li-diffusivity	Positive
+brug=1.5;%%Bruggeman coefficient
+D2=7.50E-11;%%Salt diffusivity in Electrolyte
+eps2_sep=1;%%Separator porosity
+eps2_pos=0.444;%%Electrolyte phase vol-fraction Positive
+eps2_neg=0.357;%%Electrolyte phase vol-fraction Negative
+L_neg=1.00E-04;%%Length of negative electrode
+L_sep=5.20E-05;%%Length of separator
+L_pos=1.83E-04;%%Length of positive electrode
+c0=2000;%%Initial electrolyte salt concentration
+Far=96487;%%Faraday's constant
+t_plus=0.363;%%Cationic transport number
+i_1C=17.5;%%1C discharge current
+Crate=1;
+I=i_1C*Crate;
+Dn=D1_neg*eps2_neg^brug;
+Ds=D2*eps2_sep^brug;
+Dp=D1_pos*eps2_pos^brug;
+Ln=L_neg;
+Ls=L_sep;
+Lp=L_pos;
+en=eps2_neg;
+es=eps2_sep;
+ep=eps2_pos;
+J=(1-t_plus)*I/(Far);
+L=Ln+Ls+Lp;
+Lns=Ln+Ls;
+for t=1:100:1600
+a1=-(J/(2* Dn* Ln));
+a2=(J* (Ds* en* Ln^2 + 3* Dn* es* Ln^2 - 3* Ds *es* Ln^2 - 6 *Dn *es* Ln* Lns +       3* Ds* es *Ln* Lns + 3* Dn* es* Lns^2 - 6* Dn* ep* Ln* Lp +       3 *Ds *ep *Ln *Lp + 6 *Dn* ep* Lns *Lp))/(6* Dn* Ds* (en *Ln - es* Ln +       es *Lns + ep* Lp)) - ( J* (-3 *ep* L* Lp^2 + 3* ep *Lns* Lp^2 + ep* Lp^3))/( 6* Dp* (L - Lns) *(en* Ln - es* Ln + es *Lns + ep *Lp));
+a5=J/(2* Dp* (L - Lns));
+a6=(J *(6* Dn* en *Ln^2 - 2* Ds *en *Ln^2 - 3 *Dn* es* Ln^2 - 6* Dn *en* Ln *Lns +     6* Dn *es* Ln *Lns - 3 *Dn* es* Lns^2))/( 6* Dn *Ds* (en* Ln - es* Ln + es*Lns + ep *Lp)) - ( J *(L^2 - 2 *L* Lns +     Lns^2 + (-ep* L^2* Lp + ep* (L - Lns)^2 *Lp + 2 *ep* L *Lns *Lp -      ep* Lns^2* Lp + ep* L* Lp^2 - ep *Lns* Lp^2 - (ep* Lp^3)/3)/(-en* Ln +      es* Ln - es* Lns - ep* Lp)))/(2* Dp* (L - Lns));
+b1= (3 *J)/(en* Ln* (3* a2 + a1* Ln^2));
+b2= b1;
+b5=-((3* J)/(ep* Lp *(3 *a6 + 3* a5* L^2 - 6* a5* L* Lns + 3* a5* Lns^2 -  3 *a5* L* Lp + 3* a5* Lns* Lp + a5* Lp^2)));
+b6=b5;
+z1=0:(Ln+Ls+Lp)/1000:Ln;
+z2=Ln:(Ln+Ls+Lp)/1000:(Ln+Ls);
+z3= Ln+Ls:(Ln+Ls+Lp)/1000:Ln+Ls+Lp;
+Cn=a1*(1-exp(-b1*t))*z1.^2 + a2*(1 - exp(-b2*t))+c0;
+Cp=a5*(1 - exp(-b5*t))*(Ln+Ls+Lp - z3).^2 + a6*(1 - exp(-b6*t))+c0;
+Cs=(z2-(Ln+Ls))*(a5*(1 - exp(-b5*t))*(Lp).^2 + a6*(1 - exp(-b6*t))-(a1*(1 - exp(-b1*t))*Ln.^2 + a2*(1 - exp(-b2*t))))/(Ls)+a5*(1 - exp(-b5*t))*(Lp).^2 + a6*(1 - exp(-b6*t))+c0;
+plot(z3,Cp,'-');%%blue for cathode
+hold on;
+plot(z2,Cs,'r');
+hold on;
+plot(z1,Cn,'g-');%%green for anode
+hold on;
+end
