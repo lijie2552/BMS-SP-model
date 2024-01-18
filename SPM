@@ -1,0 +1,275 @@
+clc, clear all
+tic
+syms cp cn
+dt = 1; %time Interval 
+t=1:dt:2810;
+Crate = 1; %Set 1 C-Rate 
+
+%Initial Conditions, Boundary Conditions, Constants From Nima
+capacity = 0.042; % batery capacity [Ah]
+l_p = 183e-6; %  active material thickness in the positive electrode [m]
+l_n = 100e-6; % active material thickness in the negative electrode [m]
+cs_p_max = 22860; % maximum lithium ions concentration in the positive electrode intercalation particle [mol/m^3]
+cs_n_max = 26390; % maximum lithium ions concentration in the negative electrode intercalation particle [mol/m^3]
+cs_p_empty = 3900; % lithium ions concentration in the positive electrode intercalation particle when empty [mol/m^3]
+cs_n_empty = 14870; % lithium ions concentration in the negative electrode intercalation particle when empty [mol/m^3]
+% cs_p0 = 0.5857*cs_p_max;
+% cs_n0 = 0.14853*cs_n_max;
+cs_p0 = 0.1706*cs_p_max;
+cs_n0 = 0.56347*cs_n_max;
+cs_n_full = 1385.235;  % lithium ions concentration in the postive electrode intercalation particle when full [mol/m^3] reversed
+cs_p_full = 14969.46; % lithium ions concentration in the negative electrode intercalation particle when full [mol/m^3]reversed
+R_p = 8e-6; % particle radius of the positive electrode [m]
+R_n = 12.5e-6; % particle radius of the negative electrode [m]
+k_p = 2e-6; % reaction rate constant at the refernce temperature [m^(2.5)mol^(-0.5)s^(-1)]
+k_n = 2e-6; % reaction rate constant at the refernce temperature [m^(2.5)mol^(-0.5)s^(-1)]
+Ds_p_ref = 6.0305e-10; % solid phase diffusion coefficient of positve electrode at the refernece temperature [m^2/s]
+Ds_n_ref = 3.9e-14; %3.9e-14; % solid phase diffusion coefficient of negative electrode at the refernece temperature [m^2/s]
+alpha_a_p = 0.5; % anodic transfer coefficient of the positive electrode
+alpha_a_n = 0.5; % anodic transfer coefficient of the negative electrode
+alpha_c_p = 0.5; % cathodic transfer coefficient of the positive electrode
+alpha_c_n = 0.5; % cathodic transfer coefficient of the negative electrode
+ce0 = 2000; % the electrolyte concentration in the solution phase [mol/m^3]
+ce = ce0; % the initial electrolyte concentration in the solution phase [mol/m^3]
+F = 96487; % Faraday's constant [C/mol]
+T = 25+273.15; % refernce temeprature [C]
+R = 8.3143; % the universal gas constant [J/(mol.K)]
+eps_e_p = 0.444; % electrolyte-phase volume fraction of the positive electrode
+eps_s_p = 1-eps_e_p-0.259; % solid-phase volume fraction in the positive electrode
+eps_e_n = 0.357; % electrolyte-phase volume fraction of the negative electrode
+eps_s_n = 1-eps_e_n-0.172; % solid-phase volume fraction in the negative electrode
+Sa_n = 3*(eps_s_n/R_n); % specific surface area in the negative electrode [m^-1]
+Sa_p = 3*(eps_s_p/R_p); % specific surface area in the positive electrode [m^-1]
+Acell = 24e-4; % cell cross section area [m^2]
+nli=eps_s_p*l_p *cs_p0+eps_s_n*l_n*cs_n0;
+
+i_1C=17.5;%%1C discharge current
+
+%Data set for extrapolating 
+
+Un.SOC = [0.0500000000000000,0.100000000000000,0.150000000000000,0.200000000000000,0.250000000000000,0.300000000000000,0.350000000000000,0.400000000000000,0.450000000000000,0.500000000000000,0.550000000000000,0.600000000000000,0.650000000000000,0.700000000000000];
+Un.OCP = [0.976100000000000,0.817900000000000,0.681700000000000,0.564400000000000,0.463500000000000,0.376700000000000,0.301900000000000,0.237600000000000,0.182200000000000,0.134500000000000,0.0935000000000000,0.0582000000000000,0.0278000000000000,0.00160000000000000];
+Up.SOC = [0.175000000000000,0.195000000000000,0.215000000000000,0.235000000000000,0.255000000000000,0.275000000000000,0.295000000000000,0.315000000000000,0.335000000000000,0.355000000000000,0.375000000000000,0.395000000000000,0.415000000000000,0.435000000000000,0.455000000000000,0.475000000000000,0.495000000000000,0.515000000000000,0.535000000000000,0.555000000000000,0.575000000000000,0.595000000000000,0.615000000000000,0.635000000000000,0.655000000000000,0.675000000000000,0.695000000000000,0.715000000000000,0.735000000000000,0.755000000000000,0.775000000000000,0.795000000000000,0.815000000000000,0.835000000000000,0.855000000000000,0.875000000000000,0.895000000000000,0.915000000000000,0.935000000000000,0.955000000000000,0.975000000000000,0.995000000000000];
+Up.OCP = [4.27630000000000,4.18980000000000,4.15070000000000,4.13300000000000,4.12480000000000,4.12090000000000,4.11900000000000,4.11790000000000,4.11710000000000,4.11650000000000,4.11600000000000,4.11530000000000,4.11450000000000,4.11350000000000,4.11210000000000,4.10990000000000,4.10660000000000,4.10140000000000,4.09340000000000,4.08200000000000,4.06700000000000,4.05000000000000,4.03330000000000,4.01920000000000,4.00870000000000,4.00120000000000,3.99600000000000,3.99230000000000,3.98930000000000,3.98670000000000,3.98410000000000,3.98130000000000,3.97830000000000,3.97470000000000,3.97050000000000,3.96520000000000,3.95850000000000,3.94930000000000,3.93610000000000,3.91440000000000,3.86900000000000,3.59440000000000];
+
+
+simulation_length = max(size(t)); %%%%%%%%%%%%%%??????????????????
+
+%make a constant current to run data, set step size
+
+it=i_1C*Crate*ones((simulation_length-1),1);
+It_cc = Acell*it; %current 
+
+
+j_p = -it/(Sa_p*l_p*F);  %molar flux of Li in cathode [mol/m^2/s] 
+j_n = +it/(Sa_n*l_n*F);  %molar flux of Li in anode [mol/m^2/s] 
+
+
+% n_Li = eps_s_p*l_p*Acell*cs_p0+eps_s_n*l_n*Acell*cs_n0; %total number of Li ions 
+
+% cs_n_avg0 = cs_n0; % initial average concentration in negative electrode ???
+
+
+Ds_p = Ds_p_ref; % solid-phase diffusion coefficient in the positive electrode
+Ds_n = Ds_n_ref; % solid-phase diffusion coefficient in the negative electrode
+
+
+%Charging so Ions go Cathode to Anode
+cs_p_surf(1) = cs_p0 -3*j_p(1)*t(1)/R_p -.2*R_p*j_p(1)/Ds_p;
+cs_n_surf(1) = cs_n0 -3*j_n(1)*t(1)/R_n -.2*R_n*j_n(1)/Ds_n;
+
+cs_p_avg_cc(1) = cs_p0 -3*j_p(1)*t(1)/R_p;
+cs_n_avg_cc(1) = cs_n0 -3*j_n(1)*t(1)/R_n;
+
+xs_p_surf(1) = cs_p_surf(1)/cs_p_max; %bv
+xs_n_surf(1) = cs_n_surf(1)/cs_n_max;
+
+% SOC_cc(1) = cs_n_avg_cc(1)/cs_n_max;
+
+%mp and mn for constant current
+m_p_cc(1) = -j_p(1)/(2*k_p*cs_p_max*ce^0.5*(1-xs_p_surf(1))^0.5*xs_p_surf(1)^0.5);
+m_n_cc(1) = -j_n(1)/(2*k_n*cs_n_max*ce^0.5*(1-xs_n_surf(1))^0.5*xs_n_surf(1)^0.5);
+
+U_p(1) = interp1(Up.SOC,Up.OCP,xs_p_surf(1),'linear','extrap');
+U_n(1) = interp1(Un.SOC,Un.OCP,xs_n_surf(1),'linear','extrap');
+
+
+R_cell = .007;
+
+Vcell_cc(1) = U_p(1)-U_n(1)+(2*R*T/F)*log(sqrt(m_p_cc(1)^2+1)+m_p_cc(1))-(2*R*T/F)*log(sqrt(m_n_cc(1)^2+1)+m_n_cc(1))-it(1)*R_cell; %Changed Rcell and doubled
+% OV(1) = U_p(1)-U_n(1);
+
+
+
+for i = 1:(simulation_length-2)
+
+        
+         %Standard Code to Run Constant Current (CC)
+         
+         j_p(i+1) = -it(i+1)/(Sa_p*l_p*F);  %molar flux of Li in cathode [mol/m^2/s] 
+         j_n(i+1) = +it(i+1)/(Sa_n*l_n*F);  %molar flux of Li in anode [mol/m^2/s] 
+         
+         cs_p_avg_cc(i+1) = cs_p_avg_cc(i)-3*j_p(i+1)*dt/R_p;
+         cs_n_avg_cc(i+1) = cs_n_avg_cc(i)-3*j_n(i+1)*dt/R_n;
+         
+         cs_p_surf(i+1) = cs_p_avg_cc(i) - .2*j_p(i+1)*dt*R_p/Ds_p;  %surface concentration of cathode [mol/m^3]
+         cs_n_surf(i+1) = cs_n_avg_cc(i) - .2*j_n(i+1)*dt*R_n/Ds_n; %/D_n(i) Ds_n  %surface concentration of anode [mol/m^3]
+         
+         xs_p_surf(i+1) = cs_p_surf(i+1)/cs_p_max; %bv
+         xs_n_surf(i+1) = cs_n_surf(i+1)/cs_n_max; 
+         
+%          SOC_cc(i+1) = cs_n_avg_cc(i+1)/cs_n_max; 
+         
+       
+         
+         % Recalculate 
+         m_p_cc(i+1) = -j_p(i+1)/(2*k_p*cs_p_max*ce^0.5*(1-xs_p_surf(i+1))^0.5*xs_p_surf(i+1)^0.5);
+         m_n_cc(i+1) = -j_n(i+1)/(2*k_n*cs_n_max*ce^0.5*(1-xs_n_surf(i+1))^0.5*xs_n_surf(i+1)^0.5);
+         
+         U_p(i+1) = interp1(Up.SOC,Up.OCP,xs_p_surf(i+1),'linear','extrap');
+         U_n(i+1) = interp1(Un.SOC,Un.OCP,xs_n_surf(i+1),'linear','extrap');
+         
+%          dphi=(2*R*T/F)*log(sqrt(m_n_cc(i+1)^2+1)+m_n_cc(i+1))+U_n(i+1)+it(i+1)*R_cell;
+%        
+         Vcell_cc(i+1) = U_p(i+1)-U_n(i+1)+(2*R*T/F)*log(sqrt(m_p_cc(i+1)^2+1)+m_p_cc(i+1))-(2*R*T/F)*log(sqrt(m_n_cc(i+1)^2+1)+m_n_cc(i+1)) -it(i+1)*R_cell;
+        
+           
+
+end
+toc
+length(t)
+t1=1:(length(t)-1);
+plot(t1*dt,Vcell_cc)
+hold on;
+
+% 
+% 
+% Uni= U_n';
+% Upi=U_p';
+% % import data of solid concentration
+% CPSi=cs_p_surf';
+% CNSi= cs_n_surf';
+% 
+% % N1=importdata('N601C.txt');
+% % Q1=importdata('Q601C.txt');
+% % for iii=1:1:5
+% %     N=N1(iii);
+%     Q=1;
+% %%below is defination from COMSOL 
+% 
+% brug=1.5;%%Bruggeman coefficient
+% D2=7.50E-11;%%Salt diffusivity in Electrolyte
+% D1_neg=D2; %%Electrolyte	phase	Li-diffusivity	Negative
+% D1_pos=D2; %%Electrolyte	phase	Li-diffusivity	Positive
+% eps2_sep=1;%%Separator porosity
+% eps2_pos=eps_e_p;%%Electrolyte phase vol-fraction Positive
+% eps2_neg=eps_e_n ;%%Electrolyte phase vol-fraction Negative
+% L_neg=l_n;%%Length of negative electrode
+% L_sep=5.20E-05;%%Length of separator
+% L_pos=l_p ;%%Length of positive electrode
+% 
+% c0=2000;%%Initial electrolyte salt concentration
+% Far=96487;%%Faraday's constant
+% t_plus=0.363;%%Cationic transport number
+% 
+% A=1;%%%
+% k_neg=2e-11;
+% k_pos=2e-11;
+% K1_pos=3.8;%%Solid phase conductivity Positive
+% K1_neg=100;%%Solid phase conductivity Negative
+% eps1_neg=eps_s_n;%%%Solid phase vol-fraction Negative
+% eps1_pos=eps_s_p ;%%%Solid phase vol-fraction Positive
+% k = (2*10^-10)*(1*10^4);
+% kneff = 2*10^-10*1*10^4*0.471^1.5;
+% Deltaneff = 0.357^1.5*100*10^-6;
+% 
+% %%%%%%%%%%%%%%
+% Ln=L_neg;
+% Ls=L_sep;
+% Lp=L_pos;
+% en=eps2_neg;
+% es=eps2_sep;
+% ep=eps2_pos;
+% cavgn=14870;
+% cavgp=3900;
+% Dd=7.50E-11;
+% Rg=8.314;
+% Temp=333;
+% sigmape=K1_pos*eps1_pos^brug;
+% sigmane=K1_neg*eps1_neg^brug;
+% 
+% Rj = 12.5*10^-6;
+% Saj = 1.1304*10^5;
+% Dsk = Ds_n_ref;
+% 
+% cnjmax = 26390;
+% 
+% Sajp = 1.1138*10^5;
+% Dskp = Ds_p_ref;
+% Rjp = 8*10^-6;
+% cpjmax = 22860;
+% 
+% I=i_1C*Crate;
+% J=(1-t_plus)*(I)/(1*Far);
+% Ja = I/(Saj*Ln*Far);
+% Jap =- I/(Sajp*Lp*Far);
+% 
+% 
+% for i=1:length(Uni)
+%     t=1;
+% a1=-((en^-brug* J)/(2* Dd* Ln));
+% a2=(J *(en^(1 - brug)* Ln^2 + 2* ep^(1 - brug)* Lp^2 + 6*ep *es^-brug *Lp* Ls + 3 *es^(1 - brug)* Ls^2 + 3* en^-brug* Ln*(ep *Lp + es* Ls)))/(6*Dd *(en* Ln + ep* Lp + es* Ls));
+% a5=(ep^-brug *J)/(2 *Dd* Lp);
+% a6=-((J* (2* en^(1 - brug)* Ln^2 + 3* en* ep^-brug* Ln* Lp +  ep^(1 - brug)* Lp^2 + 6* en*es^-brug *Ln* Ls + 3 *ep^-brug* es *Lp* Ls +  3 *es^(1 - brug) *Ls^2))/(6* Dd*(en* Ln + ep* Lp + es* Ls)));
+% b1= (6* Dd* en^(-1 + brug)* ep^brug* es^brug* (en *Ln + ep* Lp +  es* Ls))/(Ln *(2* en^brug *ep* es^brug* Lp^2 +  2 *ep^(1 + brug)* Lp*(es^brug* Ln + 3* en^brug* Ls) +  ep^brug *es* Ls* (2* es^brug *Ln + 3* en^brug* Ls)));
+% b5=(6 *Dd* en^brug *ep^(-1 +  brug)* es^brug *(en* Ln + ep* Lp +  es *Ls))/(Lp* (2* en*ep^brug *es^brug* Ln^2 +  2 *en^(1 + brug)* Ln* (es^brug* Lp + 3 *ep^brug* Ls) +  en^brug* es* Ls *(2* es^brug* Lp + 3 *ep^brug* Ls)));
+% b2=b5;
+% 
+% fun1 = @(z1)a1*(1-exp(-b1*t))*z1.^2 + a2*(1 - exp(-b1*t))+c0;
+% Cn=integral(fun1,0,Ln)/Ln;
+% 
+% fun2 = @(z2)(z2-(Ln+Ls))*(a5*(1 - exp(-b5*t))*(Lp).^2 + a6*(1 - exp(-b5*t))-(a1*(1 - exp(-b1*t))*Ln.^2 + a2*(1 - exp(-b1*t))))/(Ls)+a5*(1 - exp(-b5*t))*(Lp).^2 + a6*(1 - exp(-b5*t))+c0;
+% Cs=integral(fun2,Ln,Ln+Ls)/Ls;
+% 
+% fun3 = @(z3)a5*(1 - exp(-b5*t))*(Ln+Ls+Lp - z3).^2 + a6*(1 - exp(-b5*t))+c0;
+% Cp=integral(fun3,Ln+Ls,Ln+Ls+Lp)/Lp;
+% 
+% kne=-I*Ln./(1.7*2*(0.0016*(0.001*Cn).^5 - 0.0296*(0.001*Cn).^4 + 0.2072*(0.001*Cn).^3 - 0.6375*(0.001*Cn).^2 + 0.7399*(0.001*Cn) + 0.0046)*en^brug);
+% kse=-I*Ls./(1.7*1*((0.0016*(0.001*Cs).^5 - 0.0296*(0.001*Cs).^4 + 0.2072*(0.001*Cs).^3 - 0.6375*(0.001*Cs).^2 + 0.7399*(0.001*Cs) + 0.0046)*es^brug));
+% kpe=-I*Lp./(1.7*2*(0.0016*(0.001*Cp).^5 - 0.0296*(0.001*Cp).^4 + 0.2072*(0.001*Cp).^3 - 0.6375*(0.001*Cp).^2 + 0.7399*(0.001*Cp) + 0.0046)*ep^brug);
+% 
+% 
+%  S1= kne;
+%  S2= kse;
+%  S3= kpe;
+% 
+% Xin=2*((1-t_plus).*Rg*Temp/Far)*(log(a6.*(1 - exp(-b5.*t))+c0)-log(a2.*(1 - exp(-b1.*t))+c0))+(S1+S2+S3);%%electrolyte overpotential
+% 
+% cns=CNSi(i);
+% cps=CPSi(i);
+% 
+% Un=Uni(i);
+% Up=Upi(i);
+% 
+% iloc_neg=I/(3*eps1_neg*L_neg/Rj);
+% iloc_pos=-I/(3*eps1_pos*L_pos/Rjp);
+% i0_neg=Q*k_neg*Far*((cnjmax-cns))^0.5*(cns)^0.5*(Cn)^0.5;
+% i0_pos=Q*k_pos*Far*((cpjmax-cps))^0.5*(cps)^0.5*(Cp)^0.5;
+% eta_neg=Rg*Temp/(0.5*Far)*asinh(iloc_neg/(2*i0_neg));
+% eta_pos=Rg*Temp/(0.5*Far)*asinh(iloc_pos/(2*i0_pos));
+% phis_neg=eta_neg+Un;
+% phis_pos=eta_pos+Up;
+% V=phis_pos-phis_neg+Xin; %% New model
+% 
+%    
+% % 
+% 
+% y(i,1)= V;
+% % 
+% end
+
+% 
+% plot(t1',y,'-')
+% hold on;
+% 
+
